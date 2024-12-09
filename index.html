@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width,
+initial-scale=1.0"
+    />
+    <title>Socket Chat App</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 10; border-radius: 2rem; margin: 0.25rem; }
+      #input:focus { outline: none; }
+      #nickname { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+      #nickname:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef; }
+    </style>
+  </head>
+  <body>
+    <h2>Welcome to Socket Chat</h2>
+    <div id="currentTyping"></div>
+    <div id="currentOnline"></div>
+    <div>
+      <ul id="messages"></ul>
+      <form id="form" action="">
+        <input id="nickname" placeholder="Nickname" autocomplete="off" /><button id="renameBtn" type="button">Rename</button><input id="input" autocomplete="off" /><button>Send</button>
+      </form>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      let socket = io();
+
+      var messages = document.getElementById('messages');
+      var form = document.getElementById('form');
+      var input = document.getElementById('input');
+      var nickname = document.getElementById('nickname');
+      var renameBtn = document.getElementById('renameBtn');
+      var currentTyping = document.getElementById('currentTyping');
+      var currentOnline = document.getElementById('currentOnline');
+
+      
+
+
+      nickname.value = `User${Math.floor((Math.random() * 100 + 100))}`;
+      
+      socket.emit('register user', `${nickname.value}`);
+
+
+      function printOnlineStatus(msg) {   
+        currentOnline.innerText = msg;
+      }
+
+
+      function printTypingStatus(msg) {   
+        currentTyping.innerText = msg;
+      }
+
+      
+      function printChat(msg) {
+        var item = document.createElement('li');
+        item.textContent = msg;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+
+      const renameBtnHandler = function(e){          
+          socket.emit('rename user', nickname.value);
+      }
+
+      renameBtn.addEventListener("click", renameBtnHandler);
+
+      const inputHandler = function(e) {
+        socket.emit('user is typing', `user is typing`);
+      }
+
+      input.addEventListener('input', inputHandler);
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (input.value) {
+
+          let message = input.value; 
+
+          printChat(`me: ${message}`);
+
+          socket.emit('chat message', message);
+          input.value = '';
+        }
+      });
+      
+      socket.on('connection', printChat)
+      
+      socket.on('chat message', printChat);
+      
+      socket.on('users are typing', printTypingStatus);
+      
+      socket.on('users are online', printOnlineStatus);
+
+      currentTyping
+    </script>
+  </body>
+</html>
